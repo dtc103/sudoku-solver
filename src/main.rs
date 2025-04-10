@@ -5,19 +5,23 @@ use sudoku::Sudoku;
 
 use rand::Rng;
 use rand::seq::{IndexedRandom, SliceRandom};
+use sudoku_solver::SudokuSolver;
 use std::collections::HashSet;
 
+static EXAMPLE_SUDOKU: &str = "980010002007096800603070009078609410409001063500000000030000057005180390000537284";
+static AMBIGUOUS_SUDOKU: &str = "500000070001003000000009002050040007000100000008000500000500900600010000090002000";
+
 fn main() {
-    let mut rng = rand::rng();
-    let mut placed_tiles:HashSet<usize> = HashSet::from([1, 5, 7, 9, 10, 43, 132, 34, 2]);
-    println!("{}", *(0..81).filter(|n|{!placed_tiles.contains(n)}).collect::<Vec<usize>>().choose(&mut rng).unwrap());
-    return;
+    let sudoku =Sudoku::from_string(EXAMPLE_SUDOKU).unwrap();
+    let solver = SudokuSolver::new();
 
-    let mut sudoku = Sudoku::new_easy();
+    let solved_sudoku = solver.has_unique_solution(&sudoku);
 
-    sudoku.set_value(0, 0, 8).ok();
-    sudoku.set_value(0, 1, 8).ok();
+    //let solved_sudoku = solver.has_solution(&sudoku);
 
-    println!("{}", sudoku);
+    //let solved_sudoku = solver.solve(&sudoku);
+
+    println!("Unsovled: \n{}", sudoku);
+    println!("Solved: \n{}", solved_sudoku);
 
 }

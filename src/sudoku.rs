@@ -12,34 +12,65 @@ enum Difficulty{
     VeryHard
 }
 
+#[derive(Clone)]
 pub struct Sudoku{
     grid: [u8; 81],
 }
 
 impl Sudoku{
-    fn new(difficulty: Difficulty) -> Sudoku{
+    fn new(difficulty: Difficulty) -> Self{
         Sudoku{
             grid: Self::create_sudoku(difficulty),
         }
     }
 
-    pub fn new_very_easy() -> Sudoku{
+    pub fn from_string(s: &str) -> Result<Sudoku, String>{
+        let mut grid = [0; 81];
+
+        let chars: Vec<char> = s.chars()
+            .filter(|c| c.is_digit(10) || *c == '.' || *c == '0')
+            .collect();
+
+        if chars.len() != 81{
+            return Err(format!("Invalid input length: got {}, expected 81", chars.len()));
+        }
+
+        for (i, c) in chars.iter().enumerate(){
+            grid[i] = match c{
+                '.' | '0' => 0,
+                c if c.is_digit(10) => c.to_digit(10).unwrap() as u8,
+                _ => return Err(format!("Invalid character: {}", c)),
+            };
+        }
+
+        let s = Sudoku{grid};
+
+        for (pos, &tile) in s.grid.iter().enumerate(){
+            if  tile != 0 && !s.is_valid_placement(pos/9, pos%9, tile){
+                return Err(format!("Invalid placement of tile: {} in row: {} in col: {}", tile, pos/9, pos%9));
+            }
+        }
+
+        Ok(s)
+    }
+
+    pub fn new_very_easy() -> Self{
         Sudoku::new(Difficulty::VeryEasy)
     }
 
-    pub fn new_easy() -> Sudoku{
+    pub fn new_easy() -> Self{
         Sudoku::new(Difficulty::Easy)
     }
 
-    pub fn new_medium() -> Sudoku{
+    pub fn new_medium() -> Self{
         Sudoku::new(Difficulty::Medium)
     }
 
-    pub fn new_hard() -> Sudoku{
+    pub fn new_hard() -> Self{
         Sudoku::new(Difficulty::Hard)
     }
 
-    pub fn new_very_hard() -> Sudoku{
+    pub fn new_very_hard() -> Self{
         Sudoku::new(Difficulty::VeryHard)
     }
 
@@ -50,7 +81,6 @@ impl Sudoku{
                 Ok(())
             }, 
             false => {
-                println!("Is not valid");
                 Err("Invalid placement".to_string())
             }
         }
@@ -72,6 +102,22 @@ impl Sudoku{
         self.grid[row * 9 + col] = 0;
 
         Ok(())
+    }
+
+    pub fn is_solved(&self) -> bool{
+        let empty_tiles: Vec<&u8> = self.grid.iter().filter(|&&tile| tile == 0).collect();
+        
+        if !empty_tiles.is_empty(){
+            return false;
+        }
+
+        for (pos, &tile) in self.grid.iter().enumerate(){
+            if !self.is_valid_placement(pos / 9, pos % 9, tile){
+                return false
+            }
+        }
+
+        true
     }
 
     fn create_sudoku(difficulty: Difficulty) -> [u8; 81]{
@@ -128,7 +174,11 @@ impl Sudoku{
         while placed_numbers < 81{
             let rand_num = rng.random_range(1..=9);
 
-            let rand_pos = *(0..81).filter(|n|{!placed_tiles.contains(n)}).collect::<Vec<usize>>().choose(&mut rng).unwrap();
+            let rand_pos = *(0..81)
+                .filter(|n|{!placed_tiles.contains(n)})
+                .collect::<Vec<usize>>()
+                .choose(&mut rng)
+                .unwrap();
 
             if let Err(_) = sudoku.set_value(rand_pos / 9 , rand_pos % 9, rand_num){
                 continue;
@@ -154,7 +204,6 @@ impl Sudoku{
 
         //check column
         for r in (0..9).filter(|&n|{n != row}){
-            println!("row: {}, col: {}", r, col);
             if self.grid[r * 9 + col] == value{
                 return false;
             }
@@ -162,7 +211,6 @@ impl Sudoku{
 
         //check row
         for c in (0..9).filter(|&n|{n != col}){
-            println!("row: {}, col: {}", row, c);
             if self.grid[row * 9 + c] == value{
                 return false;
             }
@@ -176,10 +224,7 @@ impl Sudoku{
                 if r == sq_row_pos && c == sq_col_pos{
                     continue;
                 }
-                println!("row: {}, col: {}", r, c);
-
-
-                if self.grid[(row / 3 + r) * 9 + (col / 3) + c] == value{
+                if self.grid[((row / 3) * 3 + r ) * 9 + (col / 3) * 3 + c] == value{
                     return false;
                 }
             }
