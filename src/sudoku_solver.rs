@@ -46,6 +46,7 @@ impl SudokuSolver{
 
     pub fn has_unique_solution(&self, sudoku: &Sudoku) -> bool{
         let mut ssudoku = sudoku.clone();
+        // TODO maybe do somethign with that later
         let mut solutions: Vec<Sudoku> = Vec::new();
         let num_solutions = self.backtrack_has_unique_solution(&mut ssudoku, 0, &mut solutions);
 
