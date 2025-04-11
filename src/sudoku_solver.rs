@@ -97,3 +97,23 @@ impl SudokuSolver{
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sudoku::example_sudokus;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn test_find_all_solutions_performance(){
+        let sudoku = example_sudokus::ambiguous_sudoku();
+        let solver = SudokuSolver::new();
+
+        let start = Instant::now();
+        let all_solutions = solver.find_all_solutions(&sudoku);
+        let duration = start.elapsed();
+
+        println!("Found solutions: {} in {:?} seconds", all_solutions.len(), duration);
+    }
+}
