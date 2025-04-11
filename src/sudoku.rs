@@ -4,6 +4,37 @@ use rand::seq::{IndexedRandom, SliceRandom};
 use crate::sudoku_solver::SudokuSolver;
 use std::collections::HashSet;
 
+
+pub mod example_sudokus{
+    use super::Sudoku;
+
+    pub fn example_sudoku()-> Sudoku {
+        Sudoku::from_string(EXAMPLE_SUDOKU).unwrap()
+    }
+
+    pub fn ambiguous_sudoku()->Sudoku {
+        Sudoku::from_string(AMBIGUOUS_SUDOKU).unwrap()
+    }
+
+    pub fn extreme_sudoku() -> Sudoku {
+        Sudoku::from_string(EXTREME_SUDOKU).unwrap()
+    }
+
+    pub fn ambiguous_easy() -> Sudoku{
+        Sudoku::from_string(AMBIGUOUS_EASY).unwrap()
+    }
+
+    pub fn one_number_sudoku() -> Sudoku {
+        Sudoku::from_string(ONE_NUMBER_SUDOKU).unwrap()
+    }
+
+    static EXAMPLE_SUDOKU: &str = "980010002007096800603070009078609410409001063500000000030000057005180390000537284";
+    static AMBIGUOUS_SUDOKU: &str = "500000070001003000000009002050040007000100000008000500000500900600010000090002000";
+    static EXTREME_SUDOKU: &str = "500400030000010600000080040000000000001340000073200009680000007000500020210060000";
+    static AMBIGUOUS_EASY: &str = "145327698839654127672918543496085370218473956753096480367542819984761235521839764";
+    static ONE_NUMBER_SUDOKU: &str = "000000000000000000000000000000000000000000000000000000000000000000000000000000005";
+}
+
 enum Difficulty{
     VeryEasy,
     Easy,
@@ -19,9 +50,7 @@ pub struct Sudoku{
 
 impl Sudoku{
     fn new(difficulty: Difficulty) -> Self{
-        Sudoku{
-            grid: Self::create_sudoku(difficulty),
-        }
+        Self::create_sudoku(difficulty)
     }
 
     pub fn from_string(s: &str) -> Result<Sudoku, String>{
@@ -120,7 +149,7 @@ impl Sudoku{
         true
     }
 
-    fn create_sudoku(difficulty: Difficulty) -> [u8; 81]{
+    fn create_sudoku(difficulty: Difficulty) -> Sudoku{
         let mut rng = rand::rng();
 
         let prefilled_cells = match difficulty{
@@ -143,25 +172,35 @@ impl Sudoku{
 
         let solver = SudokuSolver::new();
 
-        let mut solution = Self::create_full_random_sudoku();
+        let mut filled_sudoku = Self::create_full_random_sudoku();
 
-        let mut idxs: Vec<usize> = (1..81).collect();
-        idxs.shuffle(&mut rng);
+        let mut removed_tiles = 0;
 
-        // change this depending on difficulty
-        for idx in idxs{
-            let value = solution.get_value(idx / 9, idx % 9).unwrap();
-            solution.unset_value(idx / 9, idx % 9).unwrap();
+        while 81 - removed_tiles > prefilled_cells{
+            let mut idxs: Vec<usize> = (1..81).collect();
+            idxs.shuffle(&mut rng);
+            
+            for idx in idxs.into_iter(){
+                let tile_value = filled_sudoku.get_value(idx/9, idx%9).unwrap();
+                filled_sudoku.unset_value(idx/9, idx%9).unwrap();
 
-            if !solver.has_unique_solution(&solution){
-                solution.set_value(idx/9, idx%9, value).unwrap();
+                if !solver.has_unique_solution(&filled_sudoku){
+                    filled_sudoku.set_value(idx/9, idx%9, tile_value).unwrap();
+                    continue;
+                }
+
+                removed_tiles += 1;
+
+                if 81 - removed_tiles <= prefilled_cells{
+                    break;
+                }
             }
         }
 
-        solution.grid
+        filled_sudoku
     }
 
-    fn create_full_random_sudoku() -> Sudoku{
+    pub fn create_full_random_sudoku() -> Sudoku{
         let mut sudoku = Sudoku{
             grid: [0; 81]
         };
@@ -238,11 +277,21 @@ impl Sudoku{
 impl fmt::Display for Sudoku{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in 0..9 {
-            for j in 0..9 {
-                write!(f, "{} ", self.grid[i * 9 + j])?;
+            if i % 3 == 0{
+                writeln!(f, "-------------------------")?;
             }
+            for j in 0..9 {
+                if j % 3 == 0{
+                    write!(f, "| {} ", self.grid[i * 9 + j])?;
+                }
+                else{
+                    write!(f, "{} ", self.grid[i * 9 + j])?;
+                }
+            }
+            write!(f, "|")?;
             writeln!(f)?;
         }
+        writeln!(f, "-------------------------")?;
         Ok(())
     }
 }

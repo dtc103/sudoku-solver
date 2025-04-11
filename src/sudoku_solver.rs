@@ -7,62 +7,39 @@ impl SudokuSolver{
         Self
     }
 
-    pub fn solve(&self, sudoku: &Sudoku) -> Sudoku{
-        let mut ssudoku = sudoku.clone();
-        self.backtrack_has_solution(&mut ssudoku, 0);
-
-        ssudoku
+    pub fn solve(&self, mut sudoku: Sudoku) -> Sudoku{
+        self.backtrack(&mut sudoku, 0, false);
+        sudoku
     }
 
-    pub fn has_solution(&self, sudoku: &Sudoku) -> bool {
-        let mut ssudoku = sudoku.clone();
-        
-        self.backtrack_has_solution(&mut ssudoku, 0)
-    }
+    pub fn has_solution(&self, sudoku: &Sudoku) -> bool{
+        let mut csudoku = sudoku.clone();
 
-    pub fn backtrack_has_solution(&self, sudoku: &mut Sudoku, pos: usize) -> bool{
-        if pos >= 81{
-            if sudoku.is_solved(){
-                return true;
-            }else{
-                return false;
-            }
-        }
+        let num_solutions = self.backtrack(&mut csudoku, 0, false);
 
-        if sudoku.get_value(pos/9, pos%9).unwrap() != 0{
-            return self.backtrack_has_solution(sudoku, pos + 1);
+        if num_solutions == 0{
+            false
         }else{
-            for tile in 1..=9{
-                if let Ok(()) = sudoku.set_value(pos / 9, pos % 9, tile){
-                    if self.backtrack_has_solution(sudoku, pos + 1){
-                        return true;
-                    }
-                    sudoku.unset_value(pos/9, pos%9).unwrap();
-                }
-            }
-            return false;
+            true
         }
     }
 
     pub fn has_unique_solution(&self, sudoku: &Sudoku) -> bool{
-        let mut ssudoku = sudoku.clone();
-        // TODO maybe do somethign with that later
-        let mut solutions: Vec<Sudoku> = Vec::new();
-        let num_solutions = self.backtrack_has_unique_solution(&mut ssudoku, 0, &mut solutions);
+        let mut csudoku = sudoku.clone();
 
-        if num_solutions > 1 || num_solutions == 0 {
-            false
-        }else {
+        let num_solutions = self.backtrack(&mut csudoku, 0, true);
+
+        if num_solutions == 1{
             true
+        }else{
+            false
         }
-
     }
 
-    pub fn backtrack_has_unique_solution(&self, sudoku: &mut Sudoku, pos:usize, ssolutions: &mut Vec<Sudoku>) -> usize{
+    pub fn backtrack(&self, sudoku: &mut Sudoku, pos:usize, check_for_uniqueness: bool) -> usize{
         let mut num_solutions = 0;
         if pos >= 81{
             if sudoku.is_solved(){
-                ssolutions.push(sudoku.clone());
                 return 1;
             }else{
                 return 0;
@@ -70,16 +47,53 @@ impl SudokuSolver{
         }
 
         if sudoku.get_value(pos/9, pos%9).unwrap() != 0{
-            return self.backtrack_has_unique_solution(sudoku, pos + 1, ssolutions);
+            return self.backtrack(sudoku, pos + 1, check_for_uniqueness);
         }else{
             for tile in 1..=9{
                 if let Ok(()) = sudoku.set_value(pos / 9, pos % 9, tile){
-                    num_solutions += self.backtrack_has_unique_solution(sudoku, pos + 1, ssolutions);
+                    num_solutions += self.backtrack(sudoku, pos + 1, check_for_uniqueness);
+                    if check_for_uniqueness && num_solutions > 1{
+                        return num_solutions;
+                    }
+                    if !check_for_uniqueness && num_solutions == 1 {
+                        return num_solutions;
+                    }
                     
                     sudoku.unset_value(pos/9, pos%9).unwrap();
                 }
             }
             return num_solutions;
+        }
+    }
+
+    pub fn find_all_solutions(sudoku: &Sudoku) -> Vec<Sudoku>{
+        let mut csudoku = sudoku.clone();
+        let mut solutions = Vec::new();
+        let solver = SudokuSolver::new();
+
+        solver.backtrack_find_all(&mut csudoku, 0, &mut solutions);
+
+        solutions
+    }
+
+    pub fn backtrack_find_all(&self, sudoku: &mut Sudoku, pos:usize, solutions: &mut Vec<Sudoku>){
+        let mut num_solutions = 0;
+        if pos >= 81{
+            if sudoku.is_solved(){
+                solutions.push(sudoku.clone());
+            }
+        }
+
+        if sudoku.get_value(pos/9, pos%9).unwrap() != 0{
+            return self.backtrack_find_all(sudoku, pos + 1, solutions);
+        }else{
+            for tile in 1..=9{
+                if let Ok(()) = sudoku.set_value(pos / 9, pos % 9, tile){
+                    self.backtrack_find_all(sudoku, pos + 1, solutions);
+                    
+                    sudoku.unset_value(pos/9, pos%9).unwrap();
+                }
+            }
         }
     }
 }
