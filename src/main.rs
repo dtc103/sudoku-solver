@@ -18,7 +18,10 @@ fn main() {
     let all_solutions = solver.find_all_solutions(&sudoku);
 
     println!("Found {} solutions", all_solutions.len());
-    for (i, solved_sudoku) in all_solutions.into_iter().enumerate(){
-        println!("Solution {}\n{}", i+1, solved_sudoku);
+    if all_solutions.len() < 50{
+        for (i, solved_sudoku) in all_solutions.into_iter().enumerate(){
+            println!("Solution {}\n{}", i+1, solved_sudoku);
+        }
     }
+    
 }
