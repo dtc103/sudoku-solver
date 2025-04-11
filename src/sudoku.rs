@@ -45,37 +45,42 @@ enum Difficulty{
 
 #[derive(Clone)]
 pub struct Sudoku{
-    grid: [u8; 81],
+    grid: [u8; Sudoku::SUDOKU_TILES],
 }
 
 impl Sudoku{
-    fn new(difficulty: Difficulty) -> Self{
-        Self::create_sudoku(difficulty)
+    const SUDOKU_TILES: usize = 81;
+    pub const EMPTY_TILE: u8 = 0;
+
+    fn new(difficulty: Difficulty, prefilled_cells:Option<usize>) -> Self{
+        Self::create_sudoku(difficulty, prefilled_cells)
     }
 
-    pub fn from_string(s: &str) -> Result<Sudoku, String>{
-        let mut grid = [0; 81];
+    pub fn from_string(s: &str) -> Result<Self, String>{
+        let mut grid = [Self::EMPTY_TILE; Self::SUDOKU_TILES];
+
+        let s = s.trim().replace(char::is_whitespace, "");
 
         let chars: Vec<char> = s.chars()
-            .filter(|c| c.is_digit(10) || *c == '.' || *c == '0')
+            .filter(|c| c.is_digit(10) || *c == '.' || *c == '0' || *c == '-' || *c == 'x')
             .collect();
 
-        if chars.len() != 81{
+        if chars.len() != Self::SUDOKU_TILES{
             return Err(format!("Invalid input length: got {}, expected 81", chars.len()));
         }
 
         for (i, c) in chars.iter().enumerate(){
             grid[i] = match c{
-                '.' | '0' => 0,
+                '.' | '0' | '-' | 'x' => Self::EMPTY_TILE,
                 c if c.is_digit(10) => c.to_digit(10).unwrap() as u8,
                 _ => return Err(format!("Invalid character: {}", c)),
             };
         }
 
-        let s = Sudoku{grid};
+        let s = Self{grid};
 
         for (pos, &tile) in s.grid.iter().enumerate(){
-            if  tile != 0 && !s.is_valid_placement(pos/9, pos%9, tile){
+            if  tile != Self::EMPTY_TILE && !s.is_valid_placement(pos/9, pos%9, tile){
                 return Err(format!("Invalid placement of tile: {} in row: {} in col: {}", tile, pos/9, pos%9));
             }
         }
@@ -83,36 +88,42 @@ impl Sudoku{
         Ok(s)
     }
 
+    pub fn new_custom_sudoku(prefilled_cells: usize) -> Result<Self, String>{
+        //difficulty does not matter here
+        if prefilled_cells < 17{
+            return Err(format!("Cell count can not be smaller than 17. Current value: {}", prefilled_cells));
+        }
+        Ok(Self::new(Difficulty::Easy, Some(prefilled_cells)))
+    }
+
     pub fn new_very_easy() -> Self{
-        Sudoku::new(Difficulty::VeryEasy)
+        Self::new(Difficulty::VeryEasy, None)
     }
 
     pub fn new_easy() -> Self{
-        Sudoku::new(Difficulty::Easy)
+        Self::new(Difficulty::Easy, None)
     }
 
     pub fn new_medium() -> Self{
-        Sudoku::new(Difficulty::Medium)
+        Self::new(Difficulty::Medium, None)
     }
 
     pub fn new_hard() -> Self{
-        Sudoku::new(Difficulty::Hard)
+        Self::new(Difficulty::Hard, None)
     }
 
     pub fn new_very_hard() -> Self{
-        Sudoku::new(Difficulty::VeryHard)
+        Self::new(Difficulty::VeryHard, None)
     }
 
     pub fn set_value(&mut self, row: usize, col: usize, value: u8) ->Result<(), String>{
-        match Self::is_valid_placement(&self, row, col, value){
-            true =>{
-                self.grid[row * 9 + col] = value;
-                Ok(())
-            }, 
-            false => {
-                Err("Invalid placement".to_string())
-            }
+        if Self::is_valid_placement(&self, row, col, value){
+            self.grid[row * 9 + col] = value;
+            Ok(())
         }
+        else{
+            Err(format!("Invalid placement in row: {}, col: {}, given value: {}", row, col, value))
+        } 
     }
 
     pub fn get_value(&self, row: usize, col: usize) -> Result<u8, String>{
@@ -128,45 +139,44 @@ impl Sudoku{
             return Err("Invalid input".to_string());
         }
 
-        self.grid[row * 9 + col] = 0;
+        self.grid[row * 9 + col] = Self::EMPTY_TILE;
 
         Ok(())
     }
 
     pub fn is_solved(&self) -> bool{
-        let empty_tiles: Vec<&u8> = self.grid.iter().filter(|&&tile| tile == 0).collect();
+        let empty_tiles: Vec<&u8> = self.grid.iter().filter(|&&tile| tile == Self::EMPTY_TILE).collect();
         
         if !empty_tiles.is_empty(){
             return false;
         }
-
-        for (pos, &tile) in self.grid.iter().enumerate(){
-            if !self.is_valid_placement(pos / 9, pos % 9, tile){
-                return false
-            }
-        }
+        //we don't need to check here, if all tiles are placed correctly, since we do this with each tile in the is_valid_placement function already
 
         true
     }
 
-    fn create_sudoku(difficulty: Difficulty) -> Sudoku{
+    fn create_sudoku(difficulty: Difficulty, prefilled_cells: Option<usize>) -> Self{
         let mut rng = rand::rng();
 
-        let prefilled_cells = match difficulty{
-            Difficulty::VeryEasy => {
-                rng.random_range(35..41)
-            },
-            Difficulty::Easy => {
-                rng.random_range(30..35)
-            },
-            Difficulty::Medium => {
-                rng.random_range(25..30)
-            },
-            Difficulty::Hard => {
-                rng.random_range(20..25)
-            },
-            Difficulty::VeryHard => {
-                rng.random_range(17..23)
+        let prefilled_cells = if let Some(n) = prefilled_cells{
+            n
+        }else{
+            match difficulty{
+                Difficulty::VeryEasy => {
+                    rng.random_range(35..41)
+                },
+                Difficulty::Easy => {
+                    rng.random_range(30..35)
+                },
+                Difficulty::Medium => {
+                    rng.random_range(25..30)
+                },
+                Difficulty::Hard => {
+                    rng.random_range(20..25)
+                },
+                Difficulty::VeryHard => {
+                    rng.random_range(17..23)
+                }
             }
         };
 
@@ -176,8 +186,8 @@ impl Sudoku{
 
         let mut removed_tiles = 0;
 
-        while 81 - removed_tiles > prefilled_cells{
-            let mut idxs: Vec<usize> = (1..81).collect();
+        while Self::SUDOKU_TILES - removed_tiles > prefilled_cells{
+            let mut idxs: Vec<usize> = (1..Self::SUDOKU_TILES).collect();
             idxs.shuffle(&mut rng);
             
             for idx in idxs.into_iter(){
@@ -191,7 +201,7 @@ impl Sudoku{
 
                 removed_tiles += 1;
 
-                if 81 - removed_tiles <= prefilled_cells{
+                if Self::SUDOKU_TILES - removed_tiles <= prefilled_cells{
                     break;
                 }
             }
@@ -200,9 +210,9 @@ impl Sudoku{
         filled_sudoku
     }
 
-    pub fn create_full_random_sudoku() -> Sudoku{
-        let mut sudoku = Sudoku{
-            grid: [0; 81]
+    pub fn create_full_random_sudoku() -> Self{
+        let mut sudoku = Self{
+            grid: [Self::EMPTY_TILE; 81]
         };
         let solver = SudokuSolver::new();
         let mut rng = rand::rng();
@@ -239,6 +249,10 @@ impl Sudoku{
         // Implement Sudoku validation logic here
         if value < 1 || value > 9 || row > 8 || col > 8{
             return false;
+        }
+
+        if value == self.get_value(row, col).unwrap(){
+            return true;
         }
 
         //check column

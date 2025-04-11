@@ -46,7 +46,7 @@ impl SudokuSolver{
             }
         }
 
-        if sudoku.get_value(pos/9, pos%9).unwrap() != 0{
+        if sudoku.get_value(pos/9, pos%9).unwrap() != Sudoku::EMPTY_TILE{
             return self.backtrack(sudoku, pos + 1, check_for_uniqueness);
         }else{
             for tile in 1..=9{
@@ -66,7 +66,7 @@ impl SudokuSolver{
         }
     }
 
-    pub fn find_all_solutions(sudoku: &Sudoku) -> Vec<Sudoku>{
+    pub fn find_all_solutions(&self, sudoku: &Sudoku) -> Vec<Sudoku>{
         let mut csudoku = sudoku.clone();
         let mut solutions = Vec::new();
         let solver = SudokuSolver::new();
@@ -77,14 +77,14 @@ impl SudokuSolver{
     }
 
     pub fn backtrack_find_all(&self, sudoku: &mut Sudoku, pos:usize, solutions: &mut Vec<Sudoku>){
-        let mut num_solutions = 0;
         if pos >= 81{
             if sudoku.is_solved(){
                 solutions.push(sudoku.clone());
             }
+            return;
         }
 
-        if sudoku.get_value(pos/9, pos%9).unwrap() != 0{
+        if sudoku.get_value(pos/9, pos%9).unwrap() != Sudoku::EMPTY_TILE{
             return self.backtrack_find_all(sudoku, pos + 1, solutions);
         }else{
             for tile in 1..=9{
