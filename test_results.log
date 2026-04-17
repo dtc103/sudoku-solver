@@ -1,0 +1,42 @@
+warning: unused import: `Duration`
+   --> src/sudoku_solver.rs:106:21
+    |
+106 |     use std::time::{Duration, Instant};
+    |                     ^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `sudoku::Sudoku`
+ --> src/main.rs:6:5
+  |
+6 | use sudoku::Sudoku;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src/main.rs:10:17
+   |
+10 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: method `solve` is never used
+  --> src/sudoku_solver.rs:10:12
+   |
+5  | impl SudokuSolver{
+   | ----------------- method in this implementation
+...
+10 |     pub fn solve(&self, mut sudoku: Sudoku) -> Sudoku{
+   |            ^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `sudoku-solver` (bin "sudoku-solver" test) generated 4 warnings (run `cargo fix --bin "sudoku-solver" --tests` to apply 3 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/main.rs (target/debug/deps/sudoku_solver-0e412590cbd5979c)
+
+running 1 test
+test sudoku_solver::tests::test_find_all_solutions_performance has been running for over 60 seconds
+Found solutions: 280540 in 125.586173198s seconds
+test sudoku_solver::tests::test_find_all_solutions_performance ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 125.59s
+
